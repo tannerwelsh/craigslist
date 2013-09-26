@@ -74,7 +74,9 @@ module Craigslist
 
           attributes = info.at_css('.px').text
           result['has_img'] = attributes.include?('img') || attributes.include?('pic')
-
+            
+          result['city'] = @city
+          
           results << result
           break if results.length == max_results
         end
