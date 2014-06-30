@@ -9,7 +9,8 @@ module Craigslist
       search_type: :A,
       min_ask: nil,
       max_ask: nil,
-      has_image: false
+      has_image: false,
+      proxy: nil
     }
 
     def initialize(*args, &block)
@@ -47,7 +48,7 @@ module Craigslist
 
       for i in 0..(([max_results - 1, -1].max) / 100)
         uri = Craigslist::Net::build_uri(@city, @category_path, options, i * 100) if i > 0
-        doc = Nokogiri::HTML(open(uri))
+	doc = Nokogiri::HTML(open(uri, proxy: proxy))
 
         doc.css('p.row').each do |node|
           result = {}
@@ -58,7 +59,7 @@ module Craigslist
 
           info = node.at_css('.l2 .pnr')
 
-          if price = info.at_css('.price')
+          if price = node.at_css('.price')
             result['price'] = price.text.strip
           else
             result['price'] = nil
@@ -73,7 +74,9 @@ module Craigslist
 
           attributes = info.at_css('.px').text
           result['has_img'] = attributes.include?('img') || attributes.include?('pic')
-
+            
+          result['city'] = @city
+          
           results << result
           break if results.length == max_results
         end
@@ -167,6 +170,12 @@ module Craigslist
       @max_ask = max_ask
       self
     end
+
+    def proxy=(proxy)
+     @proxy = proxy
+     self	
+    end
+
 
     ##
     # Methods compatible with writing from block with instance_eval also serve
@@ -270,6 +279,17 @@ module Craigslist
         self
       end
     end
+
+    # @param proxy [String]
+    # @return [Craigslist::Persistable, String]
+    def proxy(proxy=Object)
+       if proxy == Object
+         @proxy
+       else
+         self.proxy = proxy
+         self
+       end
+     end
 
     ##
     # Misc
